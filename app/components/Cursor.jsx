@@ -12,14 +12,15 @@ export default function Cursor() {
   const trailsRef = useRef([]);
   const rafRef = useRef(null);
 
-  // Initialise with safe default (no window)
+  // SAFE default — no window access here
   const mouse = useRef({ x: 0, y: 0 });
   const pos = useRef([]);
 
   useEffect(() => {
+    // prevent SSR execution
     if (typeof window === "undefined" || typeof document === "undefined") return;
 
-    // Now it's safe:
+    // Now safe to use window
     mouse.current = {
       x: window.innerWidth / 2,
       y: window.innerHeight / 2,
@@ -53,7 +54,6 @@ export default function Cursor() {
       pos.current[i] = { x: mouse.current.x, y: mouse.current.y };
     }
 
-    /** Detect interactive elements */
     function isInteractive(el) {
       if (!el) return false;
       const tag = el.tagName?.toLowerCase?.() || "";
@@ -63,7 +63,6 @@ export default function Cursor() {
       return false;
     }
 
-    /** Move handler */
     let hovering = false;
 
     function onMove(e) {
@@ -95,7 +94,6 @@ export default function Cursor() {
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseout", onLeave);
 
-    /** Animation loop */
     const ease = 0.22;
     function animate() {
       const { x: mainX, y: mainY } = mouse.current;
