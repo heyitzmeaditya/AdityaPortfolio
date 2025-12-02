@@ -3,8 +3,7 @@
 import React, { useEffect, useRef } from "react";
 
 /**
- * Cursor.jsx - Soft neon trailing snake cursor
- * Usage: import and render <Cursor /> in layout or top of page
+ * Cursor.jsx - Neon trailing snake cursor (SSR-safe version)
  */
 
 export default function Cursor() {
@@ -12,65 +11,82 @@ export default function Cursor() {
   const trailCount = 18;
   const trailsRef = useRef([]);
   const rafRef = useRef(null);
-  const mouse = useRef({ x: window?.innerWidth / 2, y: window?.innerHeight / 2 });
+
+  // Initialise with safe default (no window)
+  const mouse = useRef({ x: 0, y: 0 });
   const pos = useRef([]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    // Now it's safe:
+    mouse.current = {
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    };
+
     const root = rootRef.current;
     if (!root) return;
 
-    // main dot
+    /** MAIN DOT */
     const main = document.createElement("div");
     main.className = "cursor-main";
     main.setAttribute("aria-hidden", "true");
     root.appendChild(main);
 
-    // ring
+    /** RING */
     const ring = document.createElement("div");
     ring.className = "cursor-highlight-ring";
     root.appendChild(ring);
 
-    // create trails
+    /** TRAILS */
     for (let i = 0; i < trailCount; i++) {
       const dot = document.createElement("div");
-      dot.className = `cursor-trail ${(i > trailCount * 0.66) ? "far" : ""} ${(i % 3 === 0) ? "accent-b" : (i % 2 === 0) ? "accent-a" : "accent-c"}`;
+      dot.className = `cursor-trail ${
+        i > trailCount * 0.66 ? "far" : ""
+      } ${i % 3 === 0 ? "accent-b" : i % 2 === 0 ? "accent-a" : "accent-c"}`;
+
       dot.style.opacity = String(1 - i / (trailCount * 1.1));
       root.appendChild(dot);
+
       trailsRef.current[i] = dot;
       pos.current[i] = { x: mouse.current.x, y: mouse.current.y };
     }
 
+    /** Detect interactive elements */
     function isInteractive(el) {
       if (!el) return false;
       const tag = el.tagName?.toLowerCase?.() || "";
       if (["a", "button", "input", "textarea", "select"].includes(tag)) return true;
-      if (el.getAttribute && el.getAttribute("role") === "button") return true;
-      if (el.classList && el.classList.contains("magnetic")) return true;
+      if (el.getAttribute?.("role") === "button") return true;
+      if (el.classList?.contains("magnetic")) return true;
       return false;
     }
 
+    /** Move handler */
     let hovering = false;
+
     function onMove(e) {
       mouse.current.x = e.clientX;
       mouse.current.y = e.clientY;
+
       ring.style.left = `${mouse.current.x}px`;
       ring.style.top = `${mouse.current.y}px`;
 
       const el = document.elementFromPoint(e.clientX, e.clientY);
       const interactive = isInteractive(el);
+
       if (interactive && !hovering) {
         hovering = true;
         main.classList.add("cursor-hover");
-        root.classList.add("interactive");
-        root.classList.add("show-ring");
+        root.classList.add("interactive", "show-ring");
       } else if (!interactive && hovering) {
         hovering = false;
         main.classList.remove("cursor-hover");
-        root.classList.remove("interactive");
-        root.classList.remove("show-ring");
+        root.classList.remove("interactive", "show-ring");
       }
     }
+
     function onLeave() {
       mouse.current.x = window.innerWidth / 2;
       mouse.current.y = window.innerHeight / 2;
@@ -79,25 +95,28 @@ export default function Cursor() {
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseout", onLeave);
 
+    /** Animation loop */
     const ease = 0.22;
     function animate() {
-      const mainX = mouse.current.x;
-      const mainY = mouse.current.y;
+      const { x: mainX, y: mainY } = mouse.current;
       main.style.left = mainX + "px";
       main.style.top = mainY + "px";
 
-      let prevX = mainX, prevY = mainY;
+      let prevX = mainX;
+      let prevY = mainY;
+
       for (let i = 0; i < trailCount; i++) {
         const p = pos.current[i];
+
         p.x += (prevX - p.x) * (ease + i * 0.002);
         p.y += (prevY - p.y) * (ease + i * 0.002);
 
         const t = trailsRef.current[i];
         if (t) {
           const scale = 1 - i / (trailCount * 1.8);
-          t.style.left = p.x + "px";
-          t.style.top = p.y + "px";
-          t.style.transform = `translate(-50%,-50%) scale(${scale})`;
+          t.style.left = `${p.x}px`;
+          t.style.top = `${p.y}px`;
+          t.style.transform = `translate(-50%, -50%) scale(${scale})`;
           t.style.opacity = String(0.95 - i / (trailCount * 1.05));
         }
 
@@ -107,6 +126,7 @@ export default function Cursor() {
 
       rafRef.current = requestAnimationFrame(animate);
     }
+
     rafRef.current = requestAnimationFrame(animate);
 
     document.documentElement.classList.add("use-custom-cursor");
@@ -115,7 +135,7 @@ export default function Cursor() {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseout", onLeave);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      try { root.innerHTML = ""; } catch (e) {}
+      root.innerHTML = "";
       document.documentElement.classList.remove("use-custom-cursor");
     };
   }, []);

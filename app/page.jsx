@@ -8,6 +8,7 @@ import { BookOpen } from "lucide-react";
 
 
 
+
 import {
   ArrowRight,
   Download,
@@ -647,10 +648,13 @@ function ContactForm() {
             const email = el.elements.namedItem("email")?.value || "";
             const message = el.elements.namedItem("message")?.value || "";
             setTimeout(() => {
-              const subject = encodeURIComponent(`Portfolio message from ${name}`);
-              const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
-              window.location.href = `mailto:adityasaw407@gmail.com?subject=${subject}&body=${body}`;
-            }, 600);
+  if (typeof window !== "undefined") {
+    const subject = encodeURIComponent(`Portfolio message from ${name}`);
+    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
+    window.location.href = `mailto:adityasaw407@gmail.com?subject=${subject}&body=${body}`;
+  }
+}, 600);
+
           }}
           className="mt-4 rounded-2xl neon-border glass-hover p-6"
         >
@@ -684,9 +688,12 @@ export default function Page() {
   function scrollToProjects() {
     projectsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-  function downloadResume() {
+ function downloadResume() {
+  if (typeof window !== "undefined") {
     window.open("/resume.pdf", "_blank");
   }
+}
+
 
   return (
     <div className="min-h-screen animated-site bg-[#05060a] text-slate-50 antialiased selection:bg-sky-400/30 selection:text-white overflow-x-hidden">
